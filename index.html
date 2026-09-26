@@ -55,7 +55,8 @@
         }
         body.wrong-flash .terminal-input, 
         body.wrong-flash .btn-submit,
-        body.wrong-flash .timer-wrapper {
+        body.wrong-flash .timer-wrapper,
+        body.wrong-flash .info-btn {
             border-color: var(--neon-red) !important;
             box-shadow: var(--glow-red) !important;
             color: var(--neon-red) !important;
@@ -178,6 +179,24 @@
 
         .btn-submit:hover { background: var(--neon-green); color: #000000; text-shadow: none; }
         
+        /* Кнопка (?) слева внизу */
+        .info-btn {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            opacity: 0.6;
+            padding: 5px 12px;
+            border: 2px solid var(--neon-green);
+            border-radius: 50%;
+            box-shadow: var(--glow-green);
+            transition: all 0.2s ease;
+        }
+        .info-btn:hover { opacity: 1; background: var(--neon-green); color: #000000; text-shadow: none; }
+
+        /* Переключатель языка справа внизу */
         .lang-switch { 
             position: absolute; 
             bottom: 20px; 
@@ -189,6 +208,7 @@
             padding: 5px 10px;
             transition: all 0.1s ease;
         }
+        .lang-switch:hover { opacity: 1; }
         
         .lang-switch.rage-mode {
             color: var(--neon-red) !important;
@@ -196,6 +216,29 @@
             box-shadow: var(--glow-red);
             text-shadow: var(--glow-red);
             animation: pulse 0.5s infinite alternate;
+        }
+
+        /* Полноэкранное оверлей-окно обращения */
+        .modal-overlay {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .modal-content {
+            border: 2px solid var(--neon-green);
+            box-shadow: var(--glow-green);
+            background: #000000;
+            padding: 25px;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+            line-height: 1.6;
+            font-size: 15px;
         }
 
         @keyframes pulse { from { opacity: 0.5; } to { opacity: 1; } }
@@ -206,6 +249,7 @@
             .timer { font-size: 22px; }
             .secret-active .timer { font-size: 28px; }
             .terminal-output { font-size: 17px; }
+            .modal-content { font-size: 14px; }
         }
         @media (max-width: 480px) {
             #main-container { padding: 10px; }
@@ -217,6 +261,8 @@
             .input-group { flex-direction: column; gap: 8px; }
             .btn-submit { width: 100%; padding: 12px; }
             .terminal-input { padding: 12px; font-size: 15px; }
+            .info-btn { bottom: 15px; left: 15px; }
+            .lang-switch { bottom: 15px; right: 15px; }
         }
     </style>
 </head>
@@ -234,9 +280,29 @@
                 <button id="submit-btn" class="btn-submit">ВВОД</button>
             </div>
         </div>
+        <div class="info-btn" id="open-modal-btn">?</div>
         <div class="lang-switch" id="lang-btn">EN</div>
     </div>
+
+    <!-- Модальное окно обращения -->
+    <div class="modal-overlay" id="modal-overlay">
     <script>
+        /*
+        ========================================================================================================
+        УВАЖАЕМЫЕ ЛЮБИТЕЛИ СМОТРЕТЬ В КОД! 
+        Мы прекрасно понимаем, что вы хотите увидеть все пароли. И знаем, что это можно сделать, подсмотрев в код. 
+        Но этот сайт был создан для того, чтобы вы сами опробовали свои силы и подумали, какой может быть пароль. 
+        Подсмотрев в код, вы вероятно облегчите задачу, но явно не честно. 
+        Мы настоятельно просим вас этого не делать!
+        
+        TO THOSE WHO LOVE LOOKING AT THE CODE! 
+        We perfectly understand that you want to see all the passwords. And we know it can be done by looking into the code. 
+        But this site was created for you to test your own strengths and think about what the password could be. 
+        By looking into the code, you will probably make the task easier, but clearly not fair. 
+        We strongly ask you not to do this!
+        ========================================================================================================
+        */
+
         const targetDate = new Date('2027-02-22T00:00:00').getTime();
         let currentLang = 'ru';
         let isSecretMode = false;
@@ -244,6 +310,7 @@
         let currentStep = 0; 
         let langClickCount = 0; 
 
+        // Ссылка на ТГ — легко менять Блокнотом
         const tgConfig = {
             link: "https://t.me",
             textRu: "Линк: ",
@@ -268,117 +335,87 @@
             "RUNNING SYSTEM..."
         ];
 
+        // Полностью открытая и простая база данных сюжета
         const langData = {
             ru: {
-                labelSecret: "RG8gbW9tZW50YSB4IG9zdGFsb3M6", 
-                wrong: "0J3QldCf0KDQkNCS0JjQm9Cs0J3Qni4=", 
-                emptyWrong: "0J3QldCf0KDQkNCS0JjQm9Cs0J3Qni4g0KHQldCg0KzQldCX0J3QniDirectINCf0KPQodCi0JDRRSDQodCi0KDQnQmtCQLw==", 
-                defaultPrompt: "0JLQktCV0JTQmNCi0JUg0J/QkNCT0J7Qm9Cs", 
-                btnText: "0JLQktCe0JQ=", 
-                rageSwitch: "0KHQmNCh0KLQldCc0JAg0KPQ0INCb0JXQndCY0R8=", 
-                rageReply: "0KXRktCQ0KLQmNCi0SDRHQkNCT0LDRgtGM0YHRjSEg0K3QVE8g0J3RCDQCT0KDQo9Co0JrQmCE=", 
+                labelSecret: "До момента x осталось:",
+                wrong: "НЕПРАВИЛЬНО.",
+                emptyWrong: "НЕПРАВИЛЬНО. СЕРЬЕЗНО? ПУСТАЯ СТРОКА?",
+                defaultPrompt: "ВВЕДИТЕ ПАРОЛЬ",
+                btnText: "ВВОД",
+                rageSwitch: "СИСТЕМА УДАЛЕНИЯ",
+                rageReply: "ХВАТИТ ИГРАТЬСЯ! ЭТО НЕ ИГРУШКИ!",
+                hackerManifest: "Тем, кто любит смотреть в код! Мы прекрасно понимаем, что вы хотите увидеть все пароли. И знаем, что это можно сделать, подсмотрев в код. Но этот сайт был создан для того, чтобы вы сами опробовали свои силы и подумали, какой может быть пароль. Подсмотрев в код, вы вероятно облегчите задачу, но явно не честно. Мы настоятельно просим вас этого не делать!",
                 steps: {
-                    0: "0KHQtdGA0YzQtdC30L3QvtC/INCi0Ysg0LbQsNC70L7QvtC6LiDQm9Cw0L3QtNCwINC00LDQvCDQv9C+0LTRgdC60LDQt9C60YMgLSAxMiArIDQu",
-                    1: "0JzQvtC70L7QtNC10YYhINCa0YHRgtCw0YLQuCDRgdGC0L7Qu9GM0LrQviDQu9C10YIg0L/QvtC00YDRj9C0INCY0Jgg0L/QvtC00LHQvNGA0LDQu9CDINCxNpreferredRgdGPINC/0LDRgNC+0LvRjC4g0KHQutCw0LbQuCDRgdC70L7QstC+INC/0LHQtdCzINCx0LXQtyDQviDQuCDQtQ==",
-                    2: "0LvQsNC40LTQviDQvdCwING0LDQvNC+0Lwg0LTQtdC70LUg0YMg0LzQtdC30Y8g0L3QtdGCINC/0LDRgNC+0LvRjC4g0J/RgNC+0YHRgtC4LCDQvdC+ING0LDQt9Cx0LjRgNCw0LnRgdGPIC驼HQvNC8Kg==",
-                    3: "0Y8g0LbQtSDRgdC60LDQt9Cw0Lsg0YMg0LzQtTEyMysxMjPQvdGPINC90LjRh9C10LPQviDQvdC10YIhINCVING0LjRgdGFIQ==",
-                    4: "0JTQn9CS0J7Qm9Cs0J3QniEg0KMg0JzQldCd0K8g0J3QldCiINCf0NCT0J7Qm9CvISAqISEhISEq",
-                    5: "0JLQvtGCINC/0LDRgNC+0LvRjCEg0J/QvtC00LDQstC40YHRjCDQuNC8INC4INC/0YDQvtGH0Ywg0L7RgtGB0Y7QtNCwOiB2YSqRhXduJWNoK2FkYnM+ctRk0LvQvdGF0Y8neHcxJWprbF81Y2hpZ3DRgtGL0L7QuV1/ZWplIyAh",
-                    6: "0J3QvtCy0DRRING0YDQsCBLZWVwZXIgRW50LiDQstC+0YIg0LLQvtGCINC90LDRh9C90LXRgtGB0Y8u"
+                    0: { trigger: "ПАРОЛЬ", reply: "Серьезно? Ты жалок. Ладно дам подсказку - 12 + 4." },
+                    1: { trigger: "16", reply: "Молодец! Кстати столько лет подряд ИИ подбирал бы пароль. Скажи слово побег но без о и е" },
+                    2: { trigger: "ПБГ", reply: "ладно на самом деле у меня нет пароля. Прости, но разбирайся *сам*" },
+                    3: { trigger: "САМ", reply: "я же сказал у ме123+123ня ничего нет! Я чист!" },
+                    4: { trigger: "246", reply: "ДОВОЛЬНО! У МЕНЯ НЕТ ПАРОЛЯ! *!!!!!*" },
+                    5: { trigger: "!!!!!", reply: "Вот пароль! Подавись им и прочь отсюда: va*фwn%чи+adьs>рф$лнхя'xw1%йкl_5чigpтыои]?еje# !" },
+                    6: { trigger: "VA*ФWN%ЧИ+ADЬS>РФ$ЛНХЯ'XW1%ЙКL_5ЧIGPТЫОИ]?ЕJE#", reply: "Новая Эра Keeper Ent. вот вот начнется." }
                 },
                 contempt: [
-                    "0KXRktCQ0KLQmNCi0SDRgtGA0LDRgtC40YLRjCDQvNC+0LUg0LLRgNC10LzRjA==",
-                    "0KLRiyDQsdC10YHQv9C+0LvQtdC30LXQvS4=",
-                    "0JTQvtGB0YLRg9CvINC30LDQv9GA0LXRidC10L0u",
-                    "0K3RgtC+0YIg0L7RgtCy0L10INC90LUg0LjQvNC10LXRgiDQt9C90LDRh9C10L3QuNGPLg==",
-                    "0KDQsNC30LPQvtCy0L7RgCDQvtC60L7QvdGH0LXQvS4="
+                    "Хватит тратить мое время.",
+                    "Ты бесполезен.",
+                    "Доступ запрещен.",
+                    "Этот ответ не имеет значения.",
+                    "Разговор окончен."
                 ],
                 freeAnswers: {
-                    "H1": "0J/QtdGA0LXRgdGC0LDQvdGMINC00LXQs9GA0LDQtNC40YDQvtCy0DRRgtGMINC4INC30LDQudC80LjRgdGMINC00LXQu9C+0Lwh", 
-                    "H2": "0L3QtSDQvdGDING0Ysg0LzQvtC70L7QtNC10YYg0LrQvtC90LXRh9C90L4g0YfRgtC+INC30LAg0LzQvtC70L7QtNC10LbQvdGL0LUg0LzQtdC80YfQuNC60Lgg0YjQsNGA0LjRjHwsINC90L4g0Y3RgtC+INC90LUg0L/QvtGA0L7Qu9GMINCE", 
-                    "H3": "0J/QvtC60LAg0LTQviDRgtC10YUg0L/QvtGALCDQv9C+0LrQsCDQvdC1INC90LDQudC00LXRiNGMINC/0LDRgNC+0LvRjCE=", 
-                    "H4": "0KLQtdGA0LzQuNC90LDQuywg0LrQvtGC0L7RgNGL0Lkg0LbQtNC10YIg0YLQstC+0LXQs9C+INC/0YDQdNCy0LjQu9GM0L3QvtCz0L4g0L/QgtGA0L7Qu9GPISDQnNC90LUg0L3QtSDQv9C70LDRgtGP0YIg0LfQsCDQv9GD0YHRgtGD0R4g0LHQvtC70YLQvtCy0L3RjiDRING0L7QsdC+0Lkh", 
-                    "H5": "0J7RgtC60YPQtNCwINGING0L4g0LfQvdCw0NGOPyDQotGDirectNC+0YLQutGA0YvQuyDR0LnRgiDR2INC/0L7QuNGB0LrQvtC8INC/0LDRgNC+0LvRjCwsINCwINC90LDRhdC+0LTQuNGC0YzRgdGPING0Ysg0LzQvtC20LXRiNGMINCz0LTQtSDRg9Cz0L7QtNC90L4h", 
-                    "H6": "0KLRDirectC10L3QtSDRgdC60LDQttC4Lg==", 
-                    "H7": "4oCm", 
-                    "H8": "4oCm"  
+                    "67": "Перестань деградировать и займись делом!",
+                    "БУРМАЛДА": "не ну ты молодец конечно что за молодежные мемчики шаришь, но это не пароль!",
+                    "ПРИВЕТ": "Пока до тех пор пока не найдешь пароль!",
+                    "КТО ТЫ": "Терминал, который ждет твоего правильного пароля! Мне не платят за пустую болтовню с тобой!",
+                    "ГДЕ Я": "Откуда я то знаю? Ты открыл сайт с поиском пароля, а находится ты можешь где угодно!",
+                    "КАКОЙ ПАРОЛЬ": "Ты мне скажи.",
+                    "УРАН": "…",
+                    "ХАМАМ": "…",
                 }
             },
             en: {
-                labelSecret: "VW50aWwgbW9tZW50IHggbGVmdDo=",
-                wrong: "V1JPTkcu",
-                emptyWrong: "V1JPTkcuIFNFUklPVVNMWT8gRU1QVFkgTElORT8=",
-                defaultPrompt: "RU5URVIgUEFTU1dPUkQ=",
-                btnText: "U1VCTUlU",
-                rageSwitch: "VU5GUklFTkQgU1lTVEVN",
-                rageReply: "U1RPUCBQTEFZSU5HIEFST1VORCEgVEhJUyBJUyBOT1QgQSBUT1kh",
+                labelSecret: "Until moment x left:",
+                wrong: "WRONG.",
+                emptyWrong: "WRONG. SERIOUSLY? EMPTY LINE?",
+                defaultPrompt: "ENTER PASSWORD",
+                btnText: "SUBMIT",
+                rageSwitch: "UNFRIEND SYSTEM",
+                rageReply: "STOP PLAYING AROUND! THIS IS NOT A TOY!",
+                hackerManifest: "To those who love looking at the code! We perfectly understand that you want to see all the passwords. And we know it can be done by looking into the code. But this site was created for you to test your own strengths and think about what the password could be. By looking into the code, you will probably make the task easier, but clearly not fair. We strongly ask you not to do this!",
                 steps: {
-                    0: "U2VyaW91c2x5PyBZb3UgYXJlIHBhdGhldGljLiBGaW5lLCBJJ2xsIGdpdmUgeW91IGEgaGludCAtIDEyICsgNC4=",
-                    1: "V2VsbCBkb25lISBCeSB0aGUgd2F5LCB0aGF0J3MgaG93IG1hbnkgeWVhcnMgaW4gYSByb3cgYW4gQUkgd291bGQgYnJ1dGUtZm9yY2UgdGhlIHBhc3N3b3JkLiBTYXkgdGhlIHdvcmQgJ2VzY2FwZScgYnV0IHdpdGhvdXQgdm93ZWxz",
-                    2: "ZmluZSwgdGhlIHRydXRoIGlzIEkgZG9uJ3QgaGF2ZSBhIHBhc3N3b3JkLiBTb3JyeSwidnV0IGRlYWwgd2l0aCBpdCAqeW91cnNlbGYq",
-                    3: "SSBoYTEyMysxMjN2ZSBub3RoaW5nLCBJIHRvbGQgeW91JSBJIGFtIGNsZWFuIQ==",
-                    4: "RU5PVUdIISBJIETPTidUIEhBVkUgQSBQQVNTV09SRCEgKiEhISEhKg==",
-                    5: "SGVyZSBpcyB0aGUgcGFzc3dvcmQhIENob2tlIG9uIGl0IGFuZCBnZXQgb3V0OiB2YSqRhXduJWNoK2FkYnM+ctRk0LvQvdGF0Y8neHcxJWprbF81Y2hpZ3DRgtGL0L7QuV1/ZWplIyAh",
-                    6: "QSBOZXcgRXJhIG9mIEtlZXBlciBFbnQuIGlzIGFib3V0IHRvIGJlZ2luLg=="
+                    0: { trigger: "PASSWORD", reply: "Seriously? You are pathetic. Fine, I'll give you a hint - 12 + 4." },
+                    1: { trigger: "16", reply: "Well done! By the way, that's how many years in a row an AI would brute-force the password. Say the word 'escape' but without vowels" },
+                    2: { trigger: "YOURSELF", reply: "fine, the truth is I don't have a password. Sorry, but deal with it *yourself*" },
+                    3: { trigger: "YOURSELF", reply: "I ha123+123ve nothing, I told you! I am clean!" },
+                    4: { trigger: "246", reply: "ENOUGH! I DON'T HAVE A PASSWORD! *!!!!!*" },
+                    5: { trigger: "!!!!!", reply: "Here is the password! Choke on it and get out: va*фwn%чи+adьs>рф$лнхя'xw1%йкl_5чigpтыои]?еje# !" },
+                    6: { trigger: "VA*ФWN%ЧИ+ADЬS>РФ$ЛНХЯ'XW1%ЙКL_5ЧIGPТЫОИ]?ЕJE#", reply: "A New Era of Keeper Ent. is about to begin." }
                 },
                 contempt: [
-                    "U3RvcCB3YXN0aW5nIG15IHRpbWUu",
-                    "WW91IGFyZSB1c2VsZXNzLg==",
-                    "QWNjZXNzIGRlbmllZC4=",
-                    "Q29udmVyc2F0aW9uIG92ZXIu"
+                    "Stop wasting my time.",
+                    "You are useless.",
+                    "Access denied.",
+                    "Conversation over."
                 ],
                 freeAnswers: {
-                    "H1": "U3RvcCBkZWdyYWRpbmcgYW5kIGdldCB0byB3b3JrIQ==",
-                    "H2": "TmUgbnUgdG8gbW9sZGVkIGtvbmVjaG5vIGNodG8gemEgbW9sb2RlemhuaWUgbWVtY2hpa2kgc2hhcmlzaCwgbm8gZXRvIG5lIHBhcm9sLg==",
-                    "H3": "QnllIHVudGlsIHlvdSBmaW5kIHRoZSBwYXNzd29yZCE=",
-                    "H4": "QSB0ZXJtaW5hbCB3YWl0aW5nIGZvciB5b3VyIGNvcnJlY3QgcGFzc3dvcmQhIEkgZG9uJ3QgZ2V0IHBhaWQgZm9yIGVtcHR5IHNtYWxsIHRhbGsgd2l0aCB5b3Uh",
-                    "H5": "SG93IHNob3VsZCBJIGtub3c/IFlvdSBvcGVuZWQgYSBwYXNzd29yZCBzZWFyY2ggc2l0ZSwgeW91IGNvdWxkIGJlIGFueXdoZXJlIQ==",
-                    "H6": "WW91IHRlbGwgbWUu",
-                    "H7": "4oCm",
-                    "H8": "4oCm"
+                    "67": "Stop degrading and get to work!",
+                    "БУРМАЛДА": "Ne nu to molded konechno chto za molodezhnie memchiki sharish, no eto ne parol.",
+                    "HELLO": "Bye until you find the password!",
+                    "PRIVET": "Bye until you find the password!",
+                    "ПРИВЕТ": "Bye until you find the password!",
+                    "WHO ARE YOU": "A terminal waiting for your correct password! I don't get paid for empty small talk with you!",
+                    "КТО ТЫ": "A terminal waiting for your correct password! I don't get paid for empty small talk with you!",
+                    "WHERE AM I": "How should I know? You opened a password search site, you could be anywhere!",
+                    "ГДЕ Я": "How should I know? You opened a password search site, you could be anywhere!",
+                    "WHAT PASSWORD": "You tell me.",
+                    "КАКОЙ ПАРОЛЬ": "You tell me.",
+                    "URAN": "…",
+                    "УРАН": "…",
+                    "HAMAM": "…",
+                    "ХАМАМ": "…",
                 }
             }
         };
-        // Высокозащищенные хэши DJB2-XOR (не зависят от браузерных ограничений)
-        const stepHashes = {
-            0:, 
-            1:, 
-            2:, 
-            3:, 
-            4: [193540263]  
-        };
-
-        const freeHashes = {
-            186175: "H1", 
-            1456108191: "H2", 
-            2090539151: "H3", 
-            69116744: "H3", 
-            2103522271: "H3", 
-            2111818204: "H4", 
-            3193297128: "H4", 
-            193491873: "H5", 
-            1267568582: "H5", 
-            3169722361: "H6", 
-            744747761: "H6", 
-            2090715104: "H7", 
-            2451381: "H7", 
-            2090812739: "H8", 
-            69399220: "H8"  
-        };
-
-        const finalGate = ['V','A','*','Ф','W','N','%','Ч','Template_I','+','A','D','Ь','S','>','Р','Ф','\$','Л','Н','Х','Я','\'','X','W','1','%','Й','К','L','_','5','Ч','I','G','P','Т','Ы','О','И',']','?','Е','J','E','#'];
-
-        function d(str) { return decodeURIComponent(escape(atob(str))); }
-
-        // Локальный криптографический хэш-движок DJB2-XOR (работает без сервера везде)
-        function getLocalHash(str) {
-            let hash = 5381;
-            for (let i = 0; i < str.length; i++) {
-                hash = ((hash << 5) + hash) ^ str.charCodeAt(i);
-            }
-            return hash >>> 0;
-        }
-
         const bootScreen = document.getElementById('boot-screen');
         const mainContainer = document.getElementById('main-container');
         let bootLine = 0;
@@ -413,13 +450,26 @@
         setInterval(updateTimer, 1000);
         updateTimer();
 
+        // Логика Окна Обращения (Модалка)
+        const modalOverlay = document.getElementById('modal-overlay');
+        const modalContent = document.getElementById('modal-text-content');
+        
+        document.getElementById('open-modal-btn').addEventListener('click', () => {
+            modalContent.innerText = langData[currentLang].hackerManifest;
+            modalOverlay.style.display = 'flex';
+        });
+        modalOverlay.addEventListener('click', () => {
+            modalOverlay.style.display = 'none';
+        });
+
         document.getElementById('timer-toggle').addEventListener('click', () => {
             isSecretMode = !isSecretMode;
             mainContainer.classList.toggle('secret-active', isSecretMode);
-            document.getElementById('timer-label').innerText = d(langData[currentLang].labelSecret);
+            document.getElementById('timer-label').innerText = langData[currentLang].labelSecret;
         });
 
-        document.getElementById('lang-btn').addEventListener('click', async () => {
+        // Бесшовный перевод интерфейса
+        document.getElementById('lang-btn').addEventListener('click', () => {
             if (isLock) return;
             langClickCount++;
             const langBtn = document.getElementById('lang-btn');
@@ -427,7 +477,7 @@
             if (langClickCount > 5) {
                 isLock = true;
                 const oldText = document.getElementById('response-text').innerHTML;
-                document.getElementById('response-text').innerText = d(langData[currentLang].rageReply);
+                document.getElementById('response-text').innerText = langData[currentLang].rageReply;
                 document.body.classList.add('wrong-flash');
                 setTimeout(() => {
                     document.body.classList.remove('wrong-flash');
@@ -442,35 +492,47 @@
 
             const oldLang = currentLang;
             currentLang = currentLang === 'ru' ? 'en' : 'ru';
-            langBtn.innerText = langClickCount >= 4 ? d(langData[currentLang].rageSwitch) : (currentLang === 'ru' ? 'EN' : 'RU');
+            langBtn.innerText = langClickCount >= 4 ? langData[currentLang].rageSwitch : (currentLang === 'ru' ? 'EN' : 'RU');
             if(langClickCount >= 4) langBtn.classList.add('rage-mode');
 
-            document.getElementById('timer-label').innerText = d(langData[currentLang].labelSecret);
-            document.getElementById('submit-btn').innerText = d(langData[currentLang].btnText);
+            document.getElementById('timer-label').innerText = langData[currentLang].labelSecret;
+            document.getElementById('submit-btn').innerText = langData[currentLang].btnText;
             
             const outputField = document.getElementById('response-text');
             const currentText = outputField.innerHTML;
 
-            if (currentText === d(langData[oldLang].defaultPrompt)) {
-                outputField.innerText = d(langData[currentLang].defaultPrompt);
-            } else if (currentStep > 0 && currentStep <= 6 && currentText === d(langData[oldLang].steps[currentStep - 1])) {
-                outputField.innerText = d(langData[currentLang].steps[currentStep - 1]);
+            if (currentText === langData[oldLang].defaultPrompt) {
+                outputField.innerText = langData[currentLang].defaultPrompt;
+            } else if (currentStep > 0 && currentStep <= 7 && currentText === langData[oldLang].steps[currentStep - 1].reply) {
+                outputField.innerText = langData[currentLang].steps[currentStep - 1].reply;
             } else if (currentText.includes(tgConfig.link)) {
                 outputField.innerHTML = (currentLang === 'ru' ? tgConfig.textRu : tgConfig.textEn) + `<a href="${tgConfig.link}" target="_blank">${tgConfig.link}</a>`;
             } else {
                 for (const key in langData[oldLang].freeAnswers) {
-                    if (currentText === d(langData[oldLang].freeAnswers[key])) {
-                        outputField.innerHTML = d(langData[currentLang].freeAnswers[key]);
+                    if (currentText === langData[oldLang].freeAnswers[key]) {
+                        outputField.innerHTML = langData[currentLang].freeAnswers[key];
                         break;
                     }
                 }
             }
         });
+
         function triggerInputFlash() {
             document.getElementById('terminal-input-zone').classList.add('input-flash-active');
             setTimeout(() => { document.getElementById('terminal-input-zone').classList.remove('input-flash-active'); }, 450);
         }
 
+        function cleanInputString(str) {
+            let res = str.trim();
+            if (res === "!!!!!") return res;
+            res = res.toUpperCase();
+            while (res.length > 0 && ['.', '!', '?', ','].includes(res[res.length - 1])) {
+                res = res.slice(0, -1).trim();
+            }
+            return res;
+        }
+
+        // Кристально понятная логика проверки сюжета
         function checkCode() {
             if (isLock) return;
             const inputField = document.getElementById('user-input');
@@ -480,11 +542,11 @@
             
             if (trimmedValue === "") {
                 isLock = true;
-                outputField.innerText = d(langData[currentLang].emptyWrong);
+                outputField.innerText = langData[currentLang].emptyWrong;
                 document.body.classList.add('wrong-flash');
                 setTimeout(() => {
                     document.body.classList.remove('wrong-flash');
-                    outputField.innerText = d(langData[currentLang].defaultPrompt);
+                    outputField.innerText = langData[currentLang].defaultPrompt;
                     isLock = false;
                     inputField.focus();
                 }, 3000);
@@ -492,16 +554,17 @@
                 return;
             }
 
+            // Железный фикс шага 5 (!!!!!)
             if (currentStep === 5 && trimmedValue === "!!!!!") {
                 triggerInputFlash();
-                outputField.innerText = d(langData[currentLang].steps[currentStep]);
+                outputField.innerText = langData[currentLang].steps[currentStep].reply;
                 currentStep++;
                 inputField.value = "";
                 langClickCount = 0;
                 return;
             }
 
-            let cleanCode = trimmedValue.toUpperCase();
+            let cleanCode = cleanInputString(rawValue);
             
             if (cleanCode === "НОВАЯ ЭРА" || cleanCode === "NEW ERA") {
                 triggerInputFlash();
@@ -511,37 +574,21 @@
                 return;
             }
 
-            const finalCheckStr = finalGate.map(c => c === 'Template_I' ? 'И' : c).join('').toUpperCase();
-            if (cleanCode === finalCheckStr) {
+            if (langData[currentLang].freeAnswers[cleanCode] !== undefined) {
                 triggerInputFlash();
-                outputField.innerText = d(langData[currentLang].steps[currentStep]);
-                if (currentStep < 6) currentStep++;
+                outputField.innerHTML = langData[currentLang].freeAnswers[cleanCode];
                 inputField.value = "";
                 langClickCount = 0;
                 return;
             }
 
-            while (cleanCode.length > 0 && ['.', '!', '?', ','].includes(cleanCode[cleanCode.length - 1])) {
-                cleanCode = cleanCode.slice(0, -1).trim();
-            }
-
-            const inputHash = getLocalHash(cleanCode);
-
-            if (freeHashes[inputHash] !== undefined) {
-                const answerKey = freeHashes[inputHash];
-                triggerInputFlash();
-                outputField.innerHTML = d(langData[currentLang].freeAnswers[answerKey]);
-                inputField.value = "";
-                langClickCount = 0;
-                return;
-            }
-
-            if (currentStep <= 4) {
-                const validHashes = stepHashes[currentStep];
-                if (validHashes.includes(inputHash)) {
+            if (currentStep <= 6) {
+                const targetTrigger = langData[currentLang].steps[currentStep].trigger.toUpperCase();
+                
+                if (cleanCode === targetTrigger || cleanCode.includes(targetTrigger)) {
                     triggerInputFlash();
-                    outputField.innerText = d(langData[currentLang].steps[currentStep]);
-                    currentStep++;
+                    outputField.innerText = langData[currentLang].steps[currentStep].reply;
+                    if (currentStep < 6) currentStep++;
                     inputField.value = "";
                     langClickCount = 0;
                     return;
@@ -550,14 +597,14 @@
 
             isLock = true;
             const contemptList = langData[currentLang].contempt;
-            const randomContempt = d(contemptList[Math.floor(Math.random() * contemptList.length)]);
-            outputField.innerText = `${d(langData[currentLang].wrong)}\n${randomContempt}`;
+            const randomContempt = contemptList[Math.floor(Math.random() * contemptList.length)];
+            outputField.innerText = `${langData[currentLang].wrong}\n${randomContempt}`;
             document.body.classList.add('wrong-flash');
             inputField.value = "";
 
             setTimeout(() => {
                 document.body.classList.remove('wrong-flash');
-                outputField.innerText = d(langData[currentLang].defaultPrompt);
+                outputField.innerText = langData[currentLang].defaultPrompt;
                 isLock = false;
                 inputField.focus();
             }, 3000); 
@@ -565,8 +612,6 @@
 
         document.getElementById('submit-btn').addEventListener('click', checkCode);
         document.getElementById('user-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') checkCode(); });
-        
-        document.getElementById('submit-btn').innerText = d(langData[currentLang].btnText);
     </script>
 </body>
 </html>
